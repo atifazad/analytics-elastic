@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Pulse Demo</title>
+	{% load static %}
+	<link rel="stylesheet" href="{% static 'css/widget.css' %}">
+
+</head>
+
+<body>
+	<div class="widget-container">
+		
+		<div class="card chart">
+	   		<div id="chart-container"></div>
+	   	</div>
+
+	</div>
+	
+
+  <script src="https://code.highcharts.com/highcharts.src.js"></script>
+  <script src="https://code.highcharts.com/modules/boost.js"></script>
+  <script src="https://code.highcharts.com/modules/exporting.js"></script>
+  <script src="https://code.highcharts.com/modules/export-data.js"></script>
+  <script src="http://github.highcharts.com/master/modules/drilldown.js"></script>
+
+  <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+
+  <script>
+
+  	/*
+  	 * REVIEWS OVER TIME CHART - START
+  	 */
+
+  	var avgRatingOverTimeDataset={{ average_rating_over_time_dataset | safe }},
+  		avgRatingYearlyDataset=avgRatingOverTimeDataset.yearly_dataset,
+  		avgRatingMonthlyDataset=avgRatingOverTimeDataset.monthly_dataset,
+  		avgRatingDailyDataset=avgRatingOverTimeDataset.daily_dataset;
+
+    var reviewsOverTimeChart = Highcharts.chart('chart-container', {
+        chart: {
+        	type: 'spline',
+	        zoomType: 'x'
+	    },
+	    exporting: {
+	      buttons: {
+	        contextButton: {
+	          menuItems: Highcharts.getOptions().exporting.buttons.contextButton.menuItems.filter(item => item !== 'viewData').filter(item => item !== 'openInCloud')
+	        }
+	      }
+	    },
+        title: {
+            text: 'Average Rating Over Time'
+        },
+        xAxis: {
+        	type: 'datetime'
+        },
+        yAxis: {
+        	title: {
+                text: 'Average Rating'
+            },
+            maxPadding: 0.1
+        },
+        tooltip: {
+	    	pointFormat: 'Average Rating:<b>{point.y:.1f}</b>',
+	    },
+        series: [
+        {
+        	data: avgRatingDailyDataset,
+        	name: 'Daily'
+        },
+        {
+        	data: avgRatingMonthlyDataset,
+        	name: 'Monthly'
+        },
+        {
+        	data: avgRatingYearlyDataset,
+        	name: 'Yearly'
+        }
+        ],
+        credits: false
+    });
+    /*
+  	 * END --- REVIEWS OVER TIME CHART 
+  	 */
+
+  </script>
+</body>
+</html>

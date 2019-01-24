@@ -1,0 +1,64 @@
+.metric-container {
+	background-color: white;
+	width: 100%;
+	margin-left: 20px;
+	display: block;
+	position: fixed;
+	z-index: 9999;
+	top: 0;
+	left: 0;
+	right: 0;
+}
+
+.chart-container {
+	width: 100%;
+	margin-left: 20px;
+	margin-bottom: 50px;
+	margin-top: 110px;
+	float: left;
+}
+
+.card {
+	box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+	text-align: center;
+	float: left;
+	padding-top: 10px;
+	margin-bottom: 10px;
+	margin-right: 3px;
+}
+
+.metric_card {
+	width: 200px;
+}
+
+.metric {
+	font-size: 60px;
+}
+
+.chart {
+	width: 48%;
+	height: 450px;
+	margin-right: 10px;
+}
+
+#rating-breakdown-container {
+	width: 96%;
+	height: 75%;
+}
+
+#sentiments-breakdown-container {
+	width: 80%;
+	height: 25%;
+	margin: 0 auto;
+}
+
+#nps-breakdown-container {
+	width: 96%;
+	height: 75%;
+}
+
+#nps-sentiments-breakdown-container {
+	width: 80%;
+	height: 25%;
+	margin: 0 auto;
+}

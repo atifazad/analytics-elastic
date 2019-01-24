@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Pulse Demo</title>
+	{% load static %}
+	<link rel="stylesheet" href="{% static 'css/widget.css' %}">
+
+</head>
+
+<body>
+	
+	<div class="widget-container">
+		
+		<div class="card chart">
+	   		<div id="chart-container"></div>
+	   	</div>
+
+	</div>
+
+  <script src="https://code.highcharts.com/highcharts.src.js"></script>
+  <script src="https://code.highcharts.com/modules/boost.js"></script>
+  <script src="https://code.highcharts.com/modules/exporting.js"></script>
+  <script src="https://code.highcharts.com/modules/export-data.js"></script>
+  <script src="http://github.highcharts.com/master/modules/drilldown.js"></script>
+
+  <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+
+  <script>
+
+  	/*
+  	 * NPS SCORE & SENTIMENTS BREAKDOWN CHARTS - START
+  	 */
+
+  	var npsBreakdownDataset = {{ nps_breakdown_dataset | safe }},
+    	npsSentimentsDataset = npsBreakdownDataset.sentiments,
+    	npsScoresDataset = npsBreakdownDataset.scores,
+    	totalNpsAnswers = npsBreakdownDataset.total,
+    	npsMetricsDataset = npsBreakdownDataset.nps_metrics;
+
+    var npsBreakdownChart = Highcharts.chart('chart-container', {
+
+	    chart: {
+	        plotAreaWidth:200
+	    },
+	    exporting: {
+	      buttons: {
+	        contextButton: {
+	          menuItems: Highcharts.getOptions().exporting.buttons.contextButton.menuItems.filter(item => item !== 'viewData').filter(item => item !== 'openInCloud')
+	        }
+	      }
+	    },
+	    title: {
+	        text: 'NPS Breakdown'
+	    },
+	    xAxis: {
+	    	categories: [...Array(11).keys()].sort(function(a, b){return b-a})
+	    },
+	    yAxis: {
+	        title: {
+	            text: 'NPS Answers Count (Total: ' + totalNpsAnswers + ')'
+	        },
+	        allowDecimals: false,
+	        maxPadding: 0
+	    },
+	    tooltip: {
+	    	pointFormat: 'Count:<b>{point.y}</b> <br/>Percentage: <b>{point.percentage:.1f}%</b>',
+	    },
+	    plotOptions: {
+	        series: {
+	            dataLabels: {
+	                enabled: true,
+	                align: 'right',
+	                color: 'black',
+	            },
+	            pointPadding: 0.1,
+	            groupPadding: 0
+	        }
+	    },
+	    series: [{
+	    	type: 'bar',
+	        name: 'Answers Count',
+	        colorByPoint: true,
+	        showInLegend: false,
+	        data: npsScoresDataset.sort(function (a, b) {
+			  return b.score - a.score;
+			}),
+	        dataLabels: {
+	        	useHTML: true,
+	            formatter: function () {
+	                // display only if larger than 1
+	                return this.y >= 1 ? this.y : null;
+	            },
+	        },
+	        id: 'scores'
+	    }],
+	    responsive: {
+	        rules: [{
+	            condition: {
+	                maxWidth: 400
+	            },
+	            chartOptions: {
+	                series: [{
+	                    id: 'scores',
+	                    dataLabels: {
+	                        enabled: true
+	                    }
+	                }]
+	            }
+	        }]
+	    },
+	    credits: false
+	});
+
+  </script>
+</body>
+</html>

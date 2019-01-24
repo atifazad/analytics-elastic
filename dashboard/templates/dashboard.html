@@ -1,0 +1,515 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Pulse Demo</title>
+	{% load static %}
+	<link rel="stylesheet" href="{% static 'css/styles.css' %}">
+
+</head>
+
+<body>
+	
+	<div class="metric-container">
+		<div class="card metric_card">
+			<div >Total Reviews</div>
+   			<div class="metric" id="review-count-container"> &nbsp; </div>
+		</div>
+		<div class="card metric_card">
+			<div>Average Rating</div>
+	   		<div class="metric" id="avg-rating-container"> &nbsp; </div>
+	   	</div>
+	   	<div class="card metric_card">
+			<div>Total NPS Answers</div>
+	   		<div class="metric" id="nps-count-container"> &nbsp; </div>
+	   	</div>
+	   	<div class="card metric_card">
+			<div>NPS Score</div>
+	   		<div class="metric" id="nps-score-container"> &nbsp; </div>
+	   	</div>
+   	</div>
+	
+	<div class="chart-container">
+		
+		<div class="card chart">
+	   		<div id="rating-breakdown-container"></div>
+	   		<div id="sentiments-breakdown-container"></div>
+	   	</div>
+
+	   	<div class="card chart">
+	   		<div id="nps-breakdown-container"></div>
+	   		<div id="nps-sentiments-breakdown-container"></div>
+	   	</div>
+
+	   	<div class="card chart">
+	   		<div id="reviews-timeline-container"></div>
+	   	</div>
+		
+		<div class="card chart">
+			<div id="reviews-over-time-container"></div>
+			<div>
+				<button id="reviews-over-time-line">Line</button>
+				<button id="reviews-over-time-bar">Bar</button>
+				<button id="reviews-over-time-inverted">Inverted Bar</button>
+			</div>
+		</div>
+
+		<div class="card chart">
+	   		<div id="test-container"></div>
+	   	</div>
+	</div>
+	
+
+  <script src="https://code.highcharts.com/highcharts.src.js"></script>
+  <script src="https://code.highcharts.com/modules/boost.js"></script>
+  <script src="https://code.highcharts.com/modules/exporting.js"></script>
+  <script src="https://code.highcharts.com/modules/export-data.js"></script>
+  <script src="http://github.highcharts.com/master/modules/drilldown.js"></script>
+
+  <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+
+  <script>
+
+
+  	$().ready(function(){
+		loadReviewMetrics();
+		loadNPSMetrics();
+	});
+
+	function loadReviewMetrics() {
+
+		reviewMetricsDataset = {{ review_metrics_dataset | safe }}
+		$('#review-count-container').html(reviewMetricsDataset.review_count);
+		$('#avg-rating-container').html(reviewMetricsDataset.average_rating.toFixed(2));
+	}
+
+  	/*
+  	 * REVIEWS OVER TIME CHART - START
+  	 */
+
+  	var avgRatingOverTimeDataset={{ average_rating_over_time_dataset | safe }},
+  		avgRatingYearlyDataset=avgRatingOverTimeDataset.yearly_dataset,
+  		avgRatingMonthlyDataset=avgRatingOverTimeDataset.monthly_dataset,
+  		avgRatingDailyDataset=avgRatingOverTimeDataset.daily_dataset;
+
+    var reviewsOverTimeChart = Highcharts.chart('reviews-over-time-container', {
+        chart: {
+        	type: 'spline',
+	        zoomType: 'x'
+	    },
+	    exporting: {
+	      buttons: {
+	        contextButton: {
+	          menuItems: Highcharts.getOptions().exporting.buttons.contextButton.menuItems.filter(item => item !== 'viewData').filter(item => item !== 'openInCloud')
+	        }
+	      }
+	    },
+        title: {
+            text: 'Average Rating Over Time'
+        },
+        xAxis: {
+        	type: 'datetime'
+        },
+        yAxis: {
+        	title: {
+                text: 'Average Rating'
+            },
+            maxPadding: 0.1
+        },
+        tooltip: {
+	    	pointFormat: 'Average Rating:<b>{point.y:.1f}</b>',
+	    },
+        series: [
+        {
+        	data: avgRatingDailyDataset,
+        	name: 'Daily'
+        },
+        {
+        	data: avgRatingMonthlyDataset,
+        	name: 'Monthly'
+        },
+        {
+        	data: avgRatingYearlyDataset,
+        	name: 'Yearly'
+        }
+        ],
+        credits: false
+    });
+    /*
+  	 * END --- REVIEWS OVER TIME CHART 
+  	 */
+
+
+  	/*
+  	 * RATINGS & SENTIMENTS BREAKDOWN CHARTS - START
+  	 */
+    var ratingBreakdownDataset = {{ rating_breakdown_dataset | safe }},
+    	sentimentsDataset = ratingBreakdownDataset.sentiments,
+    	ratingsDataset = ratingBreakdownDataset.ratings,
+    	totalReviews = ratingBreakdownDataset.total;
+
+    var ratingBreakdownChart = Highcharts.chart('rating-breakdown-container', {
+
+	    chart: {
+	        plotAreaWidth:200
+	    },
+	    exporting: {
+	      buttons: {
+	        contextButton: {
+	          menuItems: Highcharts.getOptions().exporting.buttons.contextButton.menuItems.filter(item => item !== 'viewData').filter(item => item !== 'openInCloud')
+	        }
+	      }
+	    },
+	    title: {
+	        text: 'Reviews Breakdown'
+	    },
+	    xAxis: {
+	    	categories: [5,4,3,2,1]
+	    },
+	    yAxis: {
+	        title: {
+	            text: 'Reviews Count (Total: ' + totalReviews + ')'
+	        },
+	        maxPadding: .05
+	    },
+	    tooltip: {
+	    	pointFormat: 'Count:<b>{point.y}</b> <br/>Percentage: <b>{point.percentage:.1f}%</b>',
+	    },
+	    plotOptions: {
+	        series: {
+	            dataLabels: {
+	                enabled: true,
+	                align: 'right',
+	                color: 'black',
+	            },
+	            pointPadding: 0.1,
+	            groupPadding: 0
+	        }
+	    },
+	    series: [{
+	    	type: 'bar',
+	        name: 'Ratings Count',
+	        colorByPoint: true,
+	        showInLegend: false,
+	        data: ratingsDataset.sort(function (a, b) {
+			  return b.rating - a.rating;
+			}),
+	        dataLabels: {
+	        	useHTML: true,
+	            formatter: function () {
+	                // display only if larger than 1
+	                return this.y >= 1 ? this.y : null;
+	            },
+	        },
+	        id: 'ratings'
+	    }],
+	    responsive: {
+	        rules: [{
+	            condition: {
+	                maxWidth: 400
+	            },
+	            chartOptions: {
+	                series: [{
+	                    id: 'ratings',
+	                    dataLabels: {
+	                        enabled: true
+	                    }
+	                }]
+	            }
+	        }]
+	    },
+	    credits: false
+	});
+
+	var sentimentBreakdownChart = Highcharts.chart('sentiments-breakdown-container', {
+
+	    chart: {
+	    	type: 'bar'
+	    },
+	    exporting: {
+			buttons: {
+				contextButton: {
+				    enabled: false
+				}    
+			}
+	    },
+	    xAxis: {
+	    	visible: false,
+	    	maxPadding: 0
+	    },
+	    yAxis: {
+	    	visible: false,
+	    	maxPadding: 0
+	    },
+	    plotOptions: {
+	        series: {
+	            stacking: 'normal',
+	            dataLabels: {
+	                enabled: true,
+	                align: 'right',
+	                color: 'black',
+	            },
+	            pointPadding: 0.1,
+	            groupPadding: 0
+	        }
+	    },
+	    title: {
+	        text: ''
+	    },
+	    tooltip:{
+	    	useHTML: true,
+        	formatter: function () {
+	            return this.series.name + "<br/>Count: <b>" + this.y +
+	            		"</b><br/>Percentage: <b>" + this.percentage.toFixed(1) + "% </b>"
+	        }
+	    },
+	    series: sentimentsDataset,
+	    credits: false
+	});
+
+	/*
+  	 ********* END - RATINGS & SENTIMENTS BREAKDOWN CHARTS
+  	 */
+
+  	/*
+  	 * NPS SCORE & SENTIMENTS BREAKDOWN CHARTS - START
+  	 */
+
+  	var npsBreakdownDataset = {{ nps_breakdown_dataset | safe }},
+    	npsSentimentsDataset = npsBreakdownDataset.sentiments,
+    	npsScoresDataset = npsBreakdownDataset.scores,
+    	totalNpsAnswers = npsBreakdownDataset.total,
+    	npsMetricsDataset = npsBreakdownDataset.nps_metrics;
+
+	function loadNPSMetrics() {
+		$('#nps-count-container').html(npsMetricsDataset.total_nps_answers);
+		$('#nps-score-container').html(npsMetricsDataset.nps_score);
+	}
+
+    var npsBreakdownChart = Highcharts.chart('nps-breakdown-container', {
+
+	    chart: {
+	        plotAreaWidth:200
+	    },
+	    exporting: {
+	      buttons: {
+	        contextButton: {
+	          menuItems: Highcharts.getOptions().exporting.buttons.contextButton.menuItems.filter(item => item !== 'viewData').filter(item => item !== 'openInCloud')
+	        }
+	      }
+	    },
+	    title: {
+	        text: 'NPS Breakdown'
+	    },
+	    xAxis: {
+	    	categories: [...Array(11).keys()].sort(function(a, b){return b-a})
+	    },
+	    yAxis: {
+	        title: {
+	            text: 'NPS Answers Count (Total: ' + totalNpsAnswers + ')'
+	        },
+	        allowDecimals: false,
+	        maxPadding: 0
+	    },
+	    tooltip: {
+	    	pointFormat: 'Count:<b>{point.y}</b> <br/>Percentage: <b>{point.percentage:.1f}%</b>',
+	    },
+	    plotOptions: {
+	        series: {
+	            dataLabels: {
+	                enabled: true,
+	                align: 'right',
+	                color: 'black',
+	            },
+	            pointPadding: 0.1,
+	            groupPadding: 0
+	        }
+	    },
+	    series: [{
+	    	type: 'bar',
+	        name: 'Answers Count',
+	        colorByPoint: true,
+	        showInLegend: false,
+	        data: npsScoresDataset.sort(function (a, b) {
+			  return b.score - a.score;
+			}),
+	        dataLabels: {
+	        	useHTML: true,
+	            formatter: function () {
+	                // display only if larger than 1
+	                return this.y >= 1 ? this.y : null;
+	            },
+	        },
+	        id: 'scores'
+	    }],
+	    responsive: {
+	        rules: [{
+	            condition: {
+	                maxWidth: 400
+	            },
+	            chartOptions: {
+	                series: [{
+	                    id: 'scores',
+	                    dataLabels: {
+	                        enabled: true
+	                    }
+	                }]
+	            }
+	        }]
+	    },
+	    credits: false
+	});
+
+	var npsSentimentBreakdownChart = Highcharts.chart('nps-sentiments-breakdown-container', {
+
+	    chart: {
+	    	type: 'bar'
+	    },
+	    exporting: {
+			buttons: {
+				contextButton: {
+				    enabled: false
+				}    
+			}
+	    },
+	    xAxis: {
+	    	visible: false,
+	    	maxPadding: 0
+	    },
+	    yAxis: {
+	    	visible: false,
+	    	maxPadding: 0,
+	    	textAlign: 'center'
+	    },
+	    plotOptions: {
+	        series: {
+	            stacking: 'normal',
+	            dataLabels: {
+	                enabled: true,
+	                align: 'right',
+	                color: 'black',
+	            },
+	            pointPadding: 0.1,
+	            groupPadding: 0
+	        }
+	    },
+	    title: {
+	        text: ''
+	    },
+	    tooltip:{
+	    	useHTML: true,
+        	formatter: function () {
+	            return this.series.name + "<br/>Count: <b>" + this.y +
+	            		"</b><br/>Percentage: <b>" + this.percentage.toFixed(1) + "% </b>"
+	        }
+	    },
+	    series: npsSentimentsDataset,
+	    credits: false
+	});
+
+  	/*
+  	 * END - NPS SCORE & SENTIMENTS BREAKDOWN CHARTS
+  	 */
+
+
+
+  	/*
+  	 * REVIEWS TIMELINE CHART - START
+  	 */
+  	var reviewTimelineDataset = {{ reviews_timeline | safe }},
+  		reviewTimelineMainDataset = reviewTimelineDataset.main_dataset,
+  		reviewTimelineDrilldownDataset = reviewTimelineDataset.drilldown_dataset;
+
+  	var reviewsTimelineChart = Highcharts.chart('reviews-timeline-container', {
+  		lang: {
+	        drillUpText: '<< Back'
+	    },
+	    chart: {
+	    	type: 'column'
+	    },
+	    exporting: {
+	      buttons: {
+	        contextButton: {
+	          menuItems: Highcharts.getOptions().exporting.buttons.contextButton.menuItems.filter(item => item !== 'viewData').filter(item => item !== 'openInCloud')
+	        }
+	      }
+	    },
+	    xAxis: {
+	    	type: 'category',
+	    	maxPadding: 0
+	    },
+	    yAxis: {
+	    	title: {
+                text: 'Reviews Count'
+            },
+	    	maxPadding: 0,
+	    	textAlign: 'center'
+	    },
+	    plotOptions: {
+            series: {
+                stacking: 'normal',
+                borderWidth: 0,
+                dataLabels: {
+                    enabled: true
+                }
+            }
+        },
+	    title: {
+	        text: 'Reviews Timeline'
+	    },
+	    tooltip:{
+	    	useHTML: true,
+        	formatter: function () {
+	            return this.series.name + "<br/>Count: <b>" + this.y +
+	            		"</b><br/>Date: <b>" + this.point.name + "</b>"
+	        }
+	    },
+	    series: reviewTimelineMainDataset,
+	    drilldown: {
+	    	series: reviewTimelineDrilldownDataset
+	    },
+	    credits: false
+	});
+
+    $('#reviews-over-time-line').click(function () {
+	    reviewsOverTimeChart.update({
+	        chart: {
+	        	type: 'line',
+	            inverted: false,
+	            polar: false
+	        },
+	        subtitle: {
+	            text: 'Plain'
+	        }
+	    });
+	});
+
+	$('#reviews-over-time-bar').click(function () {
+	    reviewsOverTimeChart.update({
+	        chart: {
+	        	type: 'column',
+	            inverted: false,
+	            polar: false
+	        },
+	        subtitle: {
+	            text: 'Plain'
+	        }
+	    });
+	});
+
+	$('#reviews-over-time-inverted').click(function () {
+	    reviewsOverTimeChart.update({
+	        chart: {
+	        	type: 'column',
+	            inverted: true,
+	            polar: false
+	        },
+	        subtitle: {
+	            text: 'Inverted'
+	        }
+	    });
+	});
+
+  </script>
+</body>
+</html>
